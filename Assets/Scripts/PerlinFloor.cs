@@ -42,6 +42,7 @@ public class PerlinFloor : MonoBehaviour
         mesh.RecalculateNormals();
 
         GetComponent<MeshFilter>().mesh = mesh;
+        GetComponent<MeshCollider>().sharedMesh = mesh;
         GetComponent<MeshRenderer>().material = mat;
     }
 
@@ -61,7 +62,7 @@ public class PerlinFloor : MonoBehaviour
                 int index = x + y*xRes;
 
                 uvs[index] = new Vector2(x/(xRes-1f), y/(yRes-1f));
-                verts[index] = new Vector3(x/(xRes-1f), heightMap[x, y], y/(yRes-1f)) - 0.5f*Vector3.one;
+                verts[index] = new Vector3(x/(xRes-1f), heightMap[x, y] - 0.5f, y/(yRes-1f)) - 0.5f*Vector3.one;
 
                 if (x == xRes-1 || y == yRes-1) continue;
 
