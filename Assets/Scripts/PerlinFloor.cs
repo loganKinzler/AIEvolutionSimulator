@@ -8,7 +8,10 @@ public class PerlinFloor : MonoBehaviour
     [SerializeField] private Material mat;
 
     [Header("Noise")]
-    [SerializeField] [Min(1)] private int octaves = 1;
+    [SerializeField] [Min(0.0001f)] private float octavesPerUnit = 1;
+    [SerializeField] [Min(1)] private int depth = 1;
+    [SerializeField] [Min(2)] private int depthScaling = 2;
+
     // [SerializeField] private Texture2D texture;
 
     private float[,] heightMap;
@@ -76,9 +79,15 @@ public class PerlinFloor : MonoBehaviour
     private void GenerateHeightMap() {
         heightMap = new float[xRes, yRes];
 
-        for (int y=0; y<yRes; y++) {
-            for (int x=0; x<xRes; x++) {
-                heightMap[x,y] = Mathf.PerlinNoise(x/(xRes-1f)*octaves, y/(yRes-1f)*octaves) / octaves*2;
+        for (int d=0; d<depth; d++) {
+            for (int y=0; y<yRes; y++) {
+                for (int x=0; x<xRes; x++) {
+
+                    heightMap[x,y] += Mathf.PerlinNoise(
+                        x/(xRes-1f) * transform.localScale.x*octavesPerUnit * Mathf.Pow(depthScaling, d),
+                        y/(yRes-1f) * transform.localScale.z*octavesPerUnit * Mathf.Pow(depthScaling, d)) /
+                            Mathf.Pow(depthScaling, d);
+                }
             }
         }
     }
