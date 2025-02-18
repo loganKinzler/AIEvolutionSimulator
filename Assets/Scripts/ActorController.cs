@@ -1,7 +1,8 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
-public class ActorSpawner : MonoBehaviour
+public class ActorController : MonoBehaviour
 {
 
     [SerializeField] private int numActors;
@@ -10,6 +11,12 @@ public class ActorSpawner : MonoBehaviour
 
     void Start()
     {
+        // make sure the terrain exists before spawning actors
+        StartCoroutine(WaitForTerrain());
+    }
+
+    IEnumerator WaitForTerrain() {
+        yield return new WaitUntil(() => GetComponent<MeshCollider>().sharedMesh != null);
         SpawnActors();
     }
 
@@ -21,11 +28,13 @@ public class ActorSpawner : MonoBehaviour
             newActor.transform.parent = actorFolder.transform;
             newActor.name = String.Format("Actor_{0}", a);
 
+            Vector2 flatPos = new Vector2((float)sysRand.NextDouble(), (float)sysRand.NextDouble());
+            
             newActor.transform.localPosition = new Vector3(
-                (float)sysRand.NextDouble() - 0.5f,
-                1,
-                (float)sysRand.NextDouble() - 0.5f
-            );
+                flatPos.x,
+                GetComponent<PerlinFloor>().GetHeightFromPlanePos(flatPos),
+                flatPos.y
+            ) - 0.5f*Vector3.one;
         }
     }
 }

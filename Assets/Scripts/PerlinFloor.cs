@@ -1,4 +1,9 @@
 using System;
+using System.Reflection;
+using System.Runtime.ConstrainedExecution;
+using System.Threading;
+using Unity.VisualScripting;
+using UnityEditor.Timeline;
 using UnityEngine;
 
 public class PerlinFloor : MonoBehaviour
@@ -10,7 +15,7 @@ public class PerlinFloor : MonoBehaviour
     [Header("Noise")]
     [SerializeField] [Min(0.0001f)] private float octavesPerUnit = 1;
     [SerializeField] [Min(1)] private int depth = 1;
-    [SerializeField] [Min(2)] private int depthScaling = 2;
+    [SerializeField] [Min(1)] private float depthScaling = 2;
 
     // [SerializeField] private Texture2D texture;
 
@@ -51,6 +56,28 @@ public class PerlinFloor : MonoBehaviour
         
     // }
 
+    public float GetHeightFromPlanePos(Vector2 planePos) {
+        // make sure to normalize data (might be outside of unit square)897
+
+        Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
+        Vector2Int mapIndex = Vector2Int.FloorToInt(relativePos);
+
+        Vector2 localCellPos = relativePos - mapIndex;
+        int sideDirection = (localCellPos.x >= localCellPos.y)? 1:-1;// 1 = down left
+        Vector2Int sideIndex = mapIndex + (sideDirection == 1? Vector2Int.right:Vector2Int.up);
+
+        float fowardScale = ProjectionScalar(localCellPos, Vector2.one);
+        float sidewaysScale = ProjectionScalar(localCellPos, new Vector2(0.70710678118f,-0.70710678118f)*sideDirection);
+
+        float forwardLerp = Mathf.Lerp(heightMap[mapIndex.x, mapIndex.y]-0.5f, heightMap[mapIndex.x+1, mapIndex.y+1]-0.5f, fowardScale);
+        float sidewaysLerp = Mathf.Lerp(forwardLerp, heightMap[sideIndex.x, sideIndex.y]-0.5f, sidewaysScale);
+        return sidewaysLerp;
+    }
+
+    private float ProjectionScalar(Vector2 u, Vector2 v) {
+        return Vector2.Dot(u, v) / v.SqrMagnitude();
+    }
+
     private void GenerateMeshData() {
 
         verts = new Vector3[xRes*yRes];
@@ -66,13 +93,13 @@ public class PerlinFloor : MonoBehaviour
 
                 if (x == xRes-1 || y == yRes-1) continue;
 
-                tris[6*(index-y)] = index+xRes;
-                tris[6*(index-y)+1] = index+xRes+1;
-                tris[6*(index-y)+2] = index+1;
+                tris[6*(index-y)] = index;
+                tris[6*(index-y)+1] = index+xRes;
+                tris[6*(index-y)+2] = index+xRes+1;
 
-                tris[6*(index-y)+3] = index+1;
-                tris[6*(index-y)+4] = index;
-                tris[6*(index-y)+5] = index+xRes;
+                tris[6*(index-y)+3] = index+xRes+1;
+                tris[6*(index-y)+4] = index+1;
+                tris[6*(index-y)+5] = index;
             }
         }
     }
@@ -85,8 +112,8 @@ public class PerlinFloor : MonoBehaviour
                 for (int x=0; x<xRes; x++) {
 
                     heightMap[x,y] += Mathf.PerlinNoise(
-                        x/(xRes-1f) * transform.localScale.x*octavesPerUnit * Mathf.Pow(depthScaling, d),
-                        y/(yRes-1f) * transform.localScale.z*octavesPerUnit * Mathf.Pow(depthScaling, d)) /
+                        x/(xRes-1f) * transform.localScale.x*octavesPerUnit * d,
+                        y/(yRes-1f) * transform.localScale.z*octavesPerUnit * d) /
                             Mathf.Pow(depthScaling, d);
                 }
             }
