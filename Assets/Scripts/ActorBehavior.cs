@@ -5,10 +5,10 @@ using UnityEngine;//
 
 public class ActorBehavior : MonoBehaviour
 {
-    private Vector3 worldBounds;
+    private GameObject terrainObject;
 
     private enum Action {Wander}
-    private Dictionary<Action, float> actionDelays = new Dictionary<Action, float>{[Action.Wander] = 1.0f};
+    private Dictionary<Action, float> actionDelays = new Dictionary<Action, float>{[Action.Wander] = 0.5f};
     
     private bool canStartNewAction = true;
     private bool finishedPerformingAction = false;
@@ -18,8 +18,8 @@ public class ActorBehavior : MonoBehaviour
     private Vector2 targetPosition;
     private Vector2 currentPosition;
     
-    private (float, float) wanderRadius = (0.25f,0.275f);
-    private float moveSpeed = 0.05f;
+    private (float, float) wanderRadius = (1f,2f);
+    private float moveSpeed = 0.8f;
 
     private delegate float GetHeightFromPlanePos(Vector2 planePos);
     private GetHeightFromPlanePos GetTerrainHeight;
@@ -29,8 +29,8 @@ public class ActorBehavior : MonoBehaviour
     {
         currentAction = DecideOnNewAction();
 
-        worldBounds = FindObjectOfType<PerlinFloor>().gameObject.transform.localScale;
-        GetTerrainHeight = new GetHeightFromPlanePos( FindObjectOfType<PerlinFloor>().GetHeightFromPlanePos );
+        terrainObject = FindObjectOfType<PerlinFloor>().gameObject;
+        GetTerrainHeight = new GetHeightFromPlanePos( terrainObject.GetComponent<PerlinFloor>().GetHeightFromPlanePos );
 
         currentPosition = GetCurrentPosition(); 
         targetPosition = currentPosition + GetNewTargetPos();
@@ -71,7 +71,7 @@ public class ActorBehavior : MonoBehaviour
             case Action.Wander:
                 Vector2 targetDelta = currentPosition - targetPosition;
 
-                if (targetDelta.magnitude < 0.001f) return true;
+                if (targetDelta.magnitude < 0.01f) return true;
                 TransformCurrentPosition(-targetDelta.normalized * moveSpeed * Time.deltaTime);
             break;
         }
@@ -89,21 +89,26 @@ public class ActorBehavior : MonoBehaviour
 
     // WANDER ACTION METHODS
     private Vector2 GetCurrentPosition() {
-        return new Vector2(transform.localPosition.x, transform.localPosition.z);
+        Vector3 terrainDelta = transform.position - terrainObject.transform.position;
+        return new Vector2(terrainDelta.x, terrainDelta.z);
     }
 
     private void TransformCurrentPosition(Vector2 transformPosition) {
         currentPosition += transformPosition;
-        
-        transform.localPosition = new Vector3(
+
+        transform.position = terrainObject.transform.position + new Vector3(
             currentPosition.x,
-            worldBounds.y * GetTerrainHeight(0.5f*Vector2.one +  new Vector2(currentPosition.x/worldBounds.x, currentPosition.y/worldBounds.y)),
+            -terrainObject.transform.localPosition.y * GetTerrainHeight( new Vector2(
+                0.5f + currentPosition.x / terrainObject.transform.localScale.x,
+                0.5f + currentPosition.y / terrainObject.transform.localScale.z
+            )),
             currentPosition.y
         );
     }
 
     private bool IsInBounds(Vector2 pos) {
-        return Mathf.Abs(GetCurrentPosition().x) < worldBounds.x/2.0f && Mathf.Abs(GetCurrentPosition().y) < worldBounds.z/2.0f;
+        return Mathf.Abs(GetCurrentPosition().x) < terrainObject.transform.localScale.x/2.0f &&
+            Mathf.Abs(GetCurrentPosition().y) < terrainObject.transform.localScale.z/2.0f;
     }
 
     private Vector2 GetNewTargetPos() {
@@ -118,7 +123,7 @@ public class ActorBehavior : MonoBehaviour
         for (int i=0; i<4; i++) {
             if (IsInBounds(newPos)) break;
             newPos = new Vector2(-newPos.y, newPos.x);
-        } 
+        }
 
         if (!IsInBounds(newPos)) {
             newPos = Vector2.zero;

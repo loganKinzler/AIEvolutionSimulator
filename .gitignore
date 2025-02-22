@@ -3,3 +3,10 @@ Library
 Logs
 Temp
 UserSettings
+Unity.2D.Sprite.Editor.csproj
+Unity.2D.Tilemap.Editor.csproj
+Unity.2D.Tilemap.Editor.csproj
+UnityEditor.UI.csproj
+UnityEngine.UI.csproj
+AIEvolutionSimulator.sln
+Assembly-CSharp.csproj
