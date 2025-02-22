@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-public class ActorController : MonoBehaviour
+public class ActorSpawner : MonoBehaviour
 {
 
     [SerializeField] private int numActors;
@@ -28,13 +28,13 @@ public class ActorController : MonoBehaviour
             newActor.transform.parent = actorFolder.transform;
             newActor.name = String.Format("Actor_{0}", a);
 
-            Vector2 flatPos = new Vector2((float)sysRand.NextDouble(), (float)sysRand.NextDouble());
+            Vector2 flatPos = 0.25f*Vector2.one + 0.5f*new Vector2((float)sysRand.NextDouble(), (float)sysRand.NextDouble());
             
             newActor.transform.localPosition = new Vector3(
-                flatPos.x,
+                flatPos.x - 0.5f,
                 GetComponent<PerlinFloor>().GetHeightFromPlanePos(flatPos),
-                flatPos.y
-            ) - 0.5f*Vector3.one;
+                flatPos.y - 0.5f
+            );
         }
     }
 }

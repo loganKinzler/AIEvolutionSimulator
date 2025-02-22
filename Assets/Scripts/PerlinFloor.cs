@@ -51,13 +51,19 @@ public class PerlinFloor : MonoBehaviour
         GetComponent<MeshRenderer>().material = mat;
     }
 
-    // void Update()
-    // {
-        
-    // }
+    // BASIC LINEAR ALGEBRA
+    public Vector3 GetNormal(Vector3 u, Vector3 v) {
+        return Vector3.Cross(u, v) / u.magnitude / v.magnitude;
+    }
 
+    private float ProjectionScalar(Vector2 u, Vector2 v) {
+        return Vector2.Dot(u, v) / v.SqrMagnitude();
+    }
+
+
+    // INDEXING FUNCTIONS
     public float GetHeightFromPlanePos(Vector2 planePos) {
-        // make sure to normalize data (might be outside of unit square)897
+        // make sure to normalize data (might be outside of unit square)
 
         Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
         Vector2Int mapIndex = Vector2Int.FloorToInt(relativePos);
@@ -71,13 +77,26 @@ public class PerlinFloor : MonoBehaviour
 
         float forwardLerp = Mathf.Lerp(heightMap[mapIndex.x, mapIndex.y]-0.5f, heightMap[mapIndex.x+1, mapIndex.y+1]-0.5f, fowardScale);
         float sidewaysLerp = Mathf.Lerp(forwardLerp, heightMap[sideIndex.x, sideIndex.y]-0.5f, sidewaysScale);
-        return sidewaysLerp;
+        return sidewaysLerp - 0.5f;
     }
 
-    private float ProjectionScalar(Vector2 u, Vector2 v) {
-        return Vector2.Dot(u, v) / v.SqrMagnitude();
+    public Vector3 GetNormalAt(Vector2 planePos) {
+        Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
+        Vector2Int mapIndex = Vector2Int.FloorToInt(relativePos);
+
+        Vector2 localCellPos = relativePos - mapIndex;
+        int sideDirection = (localCellPos.x >= localCellPos.y)? 1:-1;// 1 = down left
+        Vector2Int sideIndex = mapIndex + (sideDirection == 1? Vector2Int.right:Vector2Int.up);
+
+        Vector3 zeroIndex3 = new Vector3(mapIndex.x, heightMap[mapIndex.x, mapIndex.y], mapIndex.y);
+        Vector3 oneIndex3 = new Vector3(mapIndex.x+1, heightMap[mapIndex.x+1, mapIndex.y+1], mapIndex.y+1);
+        Vector3 sideIndex3 = new Vector3(sideIndex.x, heightMap[sideIndex.x, sideIndex.y], sideIndex.y);
+
+        return sideDirection * GetNormal(sideIndex3 - zeroIndex3, oneIndex3 - sideIndex3);
     }
 
+
+    // MESH FUNCTIONS
     private void GenerateMeshData() {
 
         verts = new Vector3[xRes*yRes];

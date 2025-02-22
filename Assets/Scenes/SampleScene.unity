@@ -478,7 +478,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf2aab38d40403f47b7b119ee29016d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numActors: 1000
+  numActors: 1
   actor: {fileID: 4552291594604520790, guid: 3aa96950f7bd9e844942f69dda05988e, type: 3}
   actorFolder: {fileID: 87425669}
 --- !u!1 &2129717926
