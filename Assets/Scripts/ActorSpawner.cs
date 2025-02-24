@@ -10,8 +10,14 @@ public class ActorSpawner : MonoBehaviour
     [SerializeField] private GameObject actor;
     [SerializeField] private GameObject actorFolder;
 
+    private delegate float GetHeightFromPlanePos(Vector2 u);
+    private GetHeightFromPlanePos GetTerrainHeight;
+
+
     void Start()
     {
+        GetTerrainHeight = new GetHeightFromPlanePos( GetComponent<PerlinFloor>().GetHeightFromPlanePos );
+        
         // make sure the terrain exists before spawning actors
         StartCoroutine(WaitForTerrain());
     }
@@ -30,12 +36,7 @@ public class ActorSpawner : MonoBehaviour
             newActor.name = String.Format("Actor_{0}", a);
 
             Vector2 flatPos = 0.25f*Vector2.one + 0.5f*new Vector2((float)sysRand.NextDouble(), (float)sysRand.NextDouble());
-            
-            newActor.transform.localPosition = new Vector3(
-                flatPos.x - 0.5f,
-                GetComponent<PerlinFloor>().GetHeightFromPlanePos(flatPos),
-                flatPos.y - 0.5f
-            );
+            newActor.transform.localPosition = new Vector3( flatPos.x - 0.5f, GetTerrainHeight(flatPos), flatPos.y - 0.5f );
         }
     }
 }

@@ -6,6 +6,7 @@ using UnityEngine;//
 public class ActorBehavior : MonoBehaviour
 {
     private GameObject terrainObject;
+    private float boundMargin = 0.0f;
 
     private enum Action {Wander}
     private Dictionary<Action, float> actionDelays = new Dictionary<Action, float>{[Action.Wander] = 0.5f};
@@ -53,9 +54,6 @@ public class ActorBehavior : MonoBehaviour
     }
 
     private void StartNewAction() {
-        print("Starting New Action.");
-        print("Performing Current Action...");
-
         currentAction = DecideOnNewAction();
         canStartNewAction = false;
 
@@ -69,10 +67,10 @@ public class ActorBehavior : MonoBehaviour
     private bool PerformCurrentAction() {
         switch (currentAction) {
             case Action.Wander:
-                Vector2 targetDelta = currentPosition - targetPosition;
+                Vector2 targetDelta = targetPosition - currentPosition;
 
                 if (targetDelta.magnitude < 0.01f) return true;
-                TransformCurrentPosition(-targetDelta.normalized * moveSpeed * Time.deltaTime);
+                TransformCurrentPosition(targetDelta.normalized * moveSpeed * Time.deltaTime);
             break;
         }
 
@@ -80,8 +78,6 @@ public class ActorBehavior : MonoBehaviour
     }
 
     private IEnumerator NextActionDelay(Action currentAction) {
-        print("Finished Performing Action.");
-
         yield return new WaitForSeconds(actionDelays[currentAction]);
         canStartNewAction = true;
     }
@@ -96,24 +92,24 @@ public class ActorBehavior : MonoBehaviour
     private void TransformCurrentPosition(Vector2 transformPosition) {
         currentPosition += transformPosition;
 
-        transform.position = terrainObject.transform.position + new Vector3(
-            currentPosition.x,
-            -terrainObject.transform.localPosition.y * GetTerrainHeight( new Vector2(
-                0.5f + currentPosition.x / terrainObject.transform.localScale.x,
-                0.5f + currentPosition.y / terrainObject.transform.localScale.z
-            )),
-            currentPosition.y
+        Vector2 localPosition = new Vector2(
+            Mathf.Clamp01(0.5f + currentPosition.x / terrainObject.transform.localScale.x),
+            Mathf.Clamp01(0.5f + currentPosition.y / terrainObject.transform.localScale.z)
+        );
+
+        transform.localPosition = new Vector3(
+            localPosition.x - 0.5f, GetTerrainHeight(localPosition), localPosition.y - 0.5f
         );
     }
 
     private bool IsInBounds(Vector2 pos) {
-        return Mathf.Abs(GetCurrentPosition().x) < terrainObject.transform.localScale.x/2.0f &&
-            Mathf.Abs(GetCurrentPosition().y) < terrainObject.transform.localScale.z/2.0f;
+        return Mathf.Abs(pos.x + boundMargin) < 0.5f*terrainObject.transform.localScale.x &&
+            Mathf.Abs(pos.y + boundMargin) < 0.5f*terrainObject.transform.localScale.z;
     }
 
     private Vector2 GetNewTargetPos() {
         System.Random sysRand = new System.Random();
-        float theta = (float)sysRand.NextDouble() * 2*(float)Math.PI;
+        float theta = (float)sysRand.NextDouble() * 2f*(float)Math.PI;
         float radius = (float) sysRand.NextDouble();
         
         Vector2 newPos = new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) *
@@ -121,16 +117,10 @@ public class ActorBehavior : MonoBehaviour
         
         // rotate by 90 degs unitl it's in bounds
         for (int i=0; i<4; i++) {
-            if (IsInBounds(newPos)) break;
+            if (IsInBounds(targetPosition + newPos)) return targetPosition + newPos;
             newPos = new Vector2(-newPos.y, newPos.x);
         }
 
-        if (!IsInBounds(newPos)) {
-            newPos = Vector2.zero;
-            print(String.Format("{0} is a fucking idiot", gameObject.name));
-        }
-         
-
-        return newPos + GetCurrentPosition();
+        return Vector2.zero;
     }
 }

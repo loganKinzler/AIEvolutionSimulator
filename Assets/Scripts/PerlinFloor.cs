@@ -63,8 +63,6 @@ public class PerlinFloor : MonoBehaviour
 
     // INDEXING FUNCTIONS
     public float GetHeightFromPlanePos(Vector2 planePos) {
-        // make sure to normalize data (might be outside of unit square)
-
         Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
         Vector2Int mapIndex = Vector2Int.FloorToInt(relativePos);
 
