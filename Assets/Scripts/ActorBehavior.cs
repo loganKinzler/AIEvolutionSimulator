@@ -80,9 +80,7 @@ public class ActorBehavior : MonoBehaviour
 
         if (finishedPerformingAction) {
             finishedTime = Time.time;
-
-            if (energy <= 0f) {canStartNewAction = true; return;} // actions that happen immediatly
-            StartCoroutine( NextActionDelay(currentAction) );
+            canStartNewAction = true;
         }
     }
 
