@@ -122,11 +122,6 @@ public class ActorBehavior : MonoBehaviour
         return false;
     }
 
-    private IEnumerator NextActionDelay(Action currentAction) {
-        yield return new WaitForSeconds(actionDelays[currentAction]);
-        canStartNewAction = true;
-    }
-
 
     // WANDER ACTION METHODS
     private Vector2 GetCurrentPosition() {
