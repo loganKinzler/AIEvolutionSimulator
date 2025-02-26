@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
@@ -52,16 +53,20 @@ public class PerlinFloor : MonoBehaviour
     }
 
     // BASIC LINEAR ALGEBRA
-    public Vector3 GetNormal(Vector3 u, Vector3 v) {
-        return Vector3.Cross(u, v) / u.magnitude / v.magnitude;
-    }
-
     private float ProjectionScalar(Vector2 u, Vector2 v) {
         return Vector2.Dot(u, v) / v.SqrMagnitude();
     }
 
 
     // INDEXING FUNCTIONS
+    public int GetIndex(int x, int y) {
+        return x + y*xRes;
+    }
+
+    public Vector3 GetOrthographicPlane(Vector3 staticVect, Vector3 orthoVect) {
+        return orthoVect - ProjectionScalar(orthoVect, staticVect) * staticVect;// Graham-Schmitt Proccess
+    }
+
     public float GetHeightFromPlanePos(Vector2 planePos) {
         Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
         Vector2Int mapIndex = Vector2Int.FloorToInt(relativePos);
@@ -78,19 +83,38 @@ public class PerlinFloor : MonoBehaviour
         return sidewaysLerp - 0.5f;
     }
 
+    public Quaternion GetRotationAt(Vector2 planePos, Vector2 forwardVect) {
+        Vector3 normalVect = GetNormalAt(planePos);
+        Vector3 forwardVect3 = GetOrthographicPlane(normalVect,
+            transform.localToWorldMatrix*new Vector3(forwardVect.x, 0, forwardVect.y));
+        Vector3 rightVect = Vector3.Cross(normalVect, forwardVect3);
+    
+        Matrix4x4 rotMatrix = new Matrix4x4();
+        rotMatrix.SetColumn(0, rightVect);
+        rotMatrix.SetColumn(1, normalVect);
+        rotMatrix.SetColumn(2, forwardVect3);
+        rotMatrix.SetColumn(3, new Vector4(0,0,0,1));
+
+        return rotMatrix.rotation;
+    }
+
     public Vector3 GetNormalAt(Vector2 planePos) {
         Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
         Vector2Int mapIndex = Vector2Int.FloorToInt(relativePos);
 
         Vector2 localCellPos = relativePos - mapIndex;
-        int sideDirection = (localCellPos.x >= localCellPos.y)? 1:-1;// 1 = down left
-        Vector2Int sideIndex = mapIndex + (sideDirection == 1? Vector2Int.right:Vector2Int.up);
+        Vector2Int sideIndex = mapIndex + (localCellPos.y >= localCellPos.x? Vector2Int.up:Vector2Int.right);
 
-        Vector3 zeroIndex3 = new Vector3(mapIndex.x, heightMap[mapIndex.x, mapIndex.y], mapIndex.y);
-        Vector3 oneIndex3 = new Vector3(mapIndex.x+1, heightMap[mapIndex.x+1, mapIndex.y+1], mapIndex.y+1);
-        Vector3 sideIndex3 = new Vector3(sideIndex.x, heightMap[sideIndex.x, sideIndex.y], sideIndex.y);
+        mesh.normals[GetIndex(mapIndex.x, mapIndex.y)].GetHashCode();
+        mesh.normals[GetIndex(mapIndex.x+1, mapIndex.y+1)].GetHashCode();
+        mesh.normals[GetIndex(sideIndex.x, sideIndex.y)].GetHashCode();
 
-        return sideDirection * GetNormal(sideIndex3 - zeroIndex3, oneIndex3 - sideIndex3);
+        // average all of the tri's normals on each vert
+        return (
+            mesh.normals[GetIndex(mapIndex.x, mapIndex.y)] +
+            mesh.normals[GetIndex(mapIndex.x+1, mapIndex.y+1)] +
+            mesh.normals[GetIndex(sideIndex.x, sideIndex.y)]
+        ).normalized;
     }
 
 
@@ -103,7 +127,7 @@ public class PerlinFloor : MonoBehaviour
 
         for (int y=0; y<yRes; y++) {
             for (int x=0; x<xRes; x++) {
-                int index = x + y*xRes;
+                int index = GetIndex(x, y);
 
                 uvs[index] = new Vector2(x/(xRes-1f), y/(yRes-1f));
                 verts[index] = new Vector3(x/(xRes-1f), heightMap[x, y] - 0.5f, y/(yRes-1f)) - 0.5f*Vector3.one;
