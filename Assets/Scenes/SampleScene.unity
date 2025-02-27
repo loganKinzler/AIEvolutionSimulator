@@ -247,6 +247,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &385844974
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 385844975}
+  m_Layer: 0
+  m_Name: EmptyFolder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &385844975
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 385844974}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &475722729
 GameObject:
   m_ObjectHideFlags: 0
@@ -424,7 +455,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   resolution: 0.25
   mat: {fileID: 2100000, guid: 71326c1302d477a43873c946e57972ef, type: 2}
-  octavesPerUnit: 0.225
+  unitsPerOctave: 1
+  octaveScaling: 2
   depth: 5
   depthScaling: 1.85
 --- !u!4 &1456496750
@@ -478,9 +510,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf2aab38d40403f47b7b119ee29016d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hashResolution: 6
+  emptyFolder: {fileID: 385844974}
   numActors: 250
   actor: {fileID: 4552291594604520790, guid: 3aa96950f7bd9e844942f69dda05988e, type: 3}
   actorFolder: {fileID: 87425669}
+  foodObject: {fileID: 0}
 --- !u!1 &2129717926
 GameObject:
   m_ObjectHideFlags: 0
@@ -593,3 +628,4 @@ SceneRoots:
   - {fileID: 475722732}
   - {fileID: 105545330}
   - {fileID: 1456496750}
+  - {fileID: 385844975}

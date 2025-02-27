@@ -1,15 +1,26 @@
-using System;
-using System.Collections;
-using Unity.VisualScripting;
-using UnityEngine;
+using System;//
+using System.Collections;//
+using UnityEngine;//
 
 public class SceneSpawner : MonoBehaviour
 {
     private System.Random sysRand;
 
+    [Header("Hashes")]
+    [SerializeField] private float hashResolution = 1.0f;
+    [SerializeField] private GameObject emptyFolder;
+    private GameObject[,] hashFolders;
+    private int hashX;
+    private int hashY;
+
+    [Header("Actors")]
     [SerializeField] private int numActors;
     [SerializeField] private GameObject actor;
     [SerializeField] private GameObject actorFolder;
+
+    [Header("Food")]
+    [SerializeField] private GameObject foodObject;
+
 
     // DELEGATES
     private delegate float GetHeightFromPlanePos(Vector2 u);
@@ -26,6 +37,12 @@ public class SceneSpawner : MonoBehaviour
     {
         sysRand = new System.Random();
 
+        hashX = (int) Math.Max(1, transform.localScale.x / hashResolution);
+        hashY = (int) Math.Max(1, transform.localScale.z / hashResolution);
+        
+        hashFolders = new GameObject[hashX,hashY];
+
+        // delegates
         GetTerrainHeight = new GetHeightFromPlanePos( GetComponent<PerlinFloor>().GetHeightFromPlanePos );
         GetTerrainNormal = new GetNormalAt( GetComponent<PerlinFloor>().GetNormalAt );
         GetTerrainForward = new GetOrthographicPlane( GetComponent<PerlinFloor>().GetOrthographicPlane );
@@ -36,10 +53,13 @@ public class SceneSpawner : MonoBehaviour
 
     IEnumerator WaitForTerrain() {
         yield return new WaitUntil(() => GetComponent<MeshCollider>().sharedMesh != null);
+        CreateHashFolders();
         SpawnFood();
         SpawnActors();
     }
 
+
+    // RANDOM SAMPLE METHODS
     private Vector2 RandomPos() {
         return new Vector2((float)sysRand.NextDouble(), (float)sysRand.NextDouble());
     }
@@ -60,6 +80,8 @@ public class SceneSpawner : MonoBehaviour
             Mathf.Lerp(innerRadius, outterRadius, (float)sysRand.NextDouble());
     }
 
+
+    // SPAWNING METHODS
     void SpawnFood() {
 
     }
@@ -67,11 +89,40 @@ public class SceneSpawner : MonoBehaviour
     void SpawnActors() {
         for (int a=0; a<numActors; a++) {
             GameObject newActor = Instantiate<GameObject>(actor);
-            newActor.transform.parent = actorFolder.transform;
             newActor.name = String.Format("Actor_{0}", a);
 
             Vector2 flatPos = RandomPos();
-            newActor.transform.localPosition = new Vector3( flatPos.x - 0.5f, GetTerrainHeight(flatPos), flatPos.y - 0.5f );
+            newActor.transform.parent = actorFolder.transform;// adjust to scaled transform before positioning
+            newActor.transform.localPosition = new Vector3(// set actor local position
+                flatPos.x - 0.5f, GetTerrainHeight(flatPos), flatPos.y - 0.5f );
+            PlaceInHashFolder(newActor);// hash the position
         }
     }
+
+
+    // HASHING METHODS
+    private Vector2Int GetHashPosition(Vector2 planePos) {
+        Vector2 relativePos = Vector2.Scale(planePos, new Vector2(hashX, hashY));
+        return Vector2Int.FloorToInt(relativePos);
+    }
+
+    public void PlaceInHashFolder(GameObject planeObject) {
+        Vector2Int hashPos = GetHashPosition(new Vector2(
+            planeObject.transform.localPosition.x,
+            planeObject.transform.localPosition.z) + 0.5f*Vector2.one);
+
+        planeObject.transform.parent = hashFolders[hashPos.x, hashPos.y].transform;
+    }
+
+    private void CreateHashFolders() {
+        for (int y=0; y<hashY; y++) {
+            for (int x=0; x<hashX; x++) {
+                GameObject newHashFolder = Instantiate<GameObject>(emptyFolder, actorFolder.transform);
+
+                newHashFolder.name = String.Format("HashFolder_{0},{1}", x,y);
+                hashFolders[x,y] = newHashFolder;
+            }
+        }
+    }
+
 }

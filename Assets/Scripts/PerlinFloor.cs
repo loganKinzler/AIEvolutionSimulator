@@ -1,20 +1,17 @@
-using System;
-using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.ConstrainedExecution;
-using System.Threading;
-using Unity.VisualScripting;
-using UnityEditor.Timeline;
-using UnityEngine;
+using System;//
+using UnityEngine;//
 
 public class PerlinFloor : MonoBehaviour
 {
+    private System.Random sysRand = new System.Random();
+
     [Header("Mesh Data")]
     [SerializeField] [Min(0.0001f)] private float resolution = 1f;
     [SerializeField] private Material mat;
 
     [Header("Noise")]
-    [SerializeField] [Min(0.0001f)] private float octavesPerUnit = 1;
+    [SerializeField] [Min(0.0001f)] private float unitsPerOctave = 1f;
+    [SerializeField] [Min(1)] private float octaveScaling = 2;
     [SerializeField] [Min(1)] private int depth = 1;
     [SerializeField] [Min(1)] private float depthScaling = 2;
 
@@ -80,23 +77,23 @@ public class PerlinFloor : MonoBehaviour
 
         float forwardLerp = Mathf.Lerp(heightMap[mapIndex.x, mapIndex.y]-0.5f, heightMap[mapIndex.x+1, mapIndex.y+1]-0.5f, fowardScale);
         float sidewaysLerp = Mathf.Lerp(forwardLerp, heightMap[sideIndex.x, sideIndex.y]-0.5f, sidewaysScale);
-        return sidewaysLerp - 0.5f;
+        return sidewaysLerp - 0.25f;
     }
 
-    public Quaternion GetRotationAt(Vector2 planePos, Vector2 forwardVect) {
-        Vector3 normalVect = GetNormalAt(planePos);
-        Vector3 forwardVect3 = GetOrthographicPlane(normalVect,
-            transform.localToWorldMatrix*new Vector3(forwardVect.x, 0, forwardVect.y));
-        Vector3 rightVect = Vector3.Cross(normalVect, forwardVect3);
+    // public Quaternion GetRotationAt(Vector2 planePos, Vector2 forwardVect) {
+    //     Vector3 normalVect = GetNormalAt(planePos);
+    //     Vector3 forwardVect3 = GetOrthographicPlane(normalVect,
+    //         transform.localToWorldMatrix*new Vector3(forwardVect.x, 0, forwardVect.y));
+    //     Vector3 rightVect = Vector3.Cross(normalVect, forwardVect3);
     
-        Matrix4x4 rotMatrix = new Matrix4x4();
-        rotMatrix.SetColumn(0, rightVect);
-        rotMatrix.SetColumn(1, normalVect);
-        rotMatrix.SetColumn(2, forwardVect3);
-        rotMatrix.SetColumn(3, new Vector4(0,0,0,1));
+    //     Matrix4x4 rotMatrix = new Matrix4x4();
+    //     rotMatrix.SetColumn(0, rightVect);
+    //     rotMatrix.SetColumn(1, normalVect);
+    //     rotMatrix.SetColumn(2, forwardVect3);
+    //     rotMatrix.SetColumn(3, new Vector4(0,0,0,1));
 
-        return rotMatrix.rotation;
-    }
+    //     return rotMatrix.rotation;
+    // }
 
     public Vector3 GetNormalAt(Vector2 planePos) {
         Vector2 relativePos = Vector2.Scale(planePos, new Vector2(xRes-1, yRes-1));
@@ -104,10 +101,6 @@ public class PerlinFloor : MonoBehaviour
 
         Vector2 localCellPos = relativePos - mapIndex;
         Vector2Int sideIndex = mapIndex + (localCellPos.y >= localCellPos.x? Vector2Int.up:Vector2Int.right);
-
-        mesh.normals[GetIndex(mapIndex.x, mapIndex.y)].GetHashCode();
-        mesh.normals[GetIndex(mapIndex.x+1, mapIndex.y+1)].GetHashCode();
-        mesh.normals[GetIndex(sideIndex.x, sideIndex.y)].GetHashCode();
 
         // average all of the tri's normals on each vert
         return (
@@ -130,7 +123,7 @@ public class PerlinFloor : MonoBehaviour
                 int index = GetIndex(x, y);
 
                 uvs[index] = new Vector2(x/(xRes-1f), y/(yRes-1f));
-                verts[index] = new Vector3(x/(xRes-1f), heightMap[x, y] - 0.5f, y/(yRes-1f)) - 0.5f*Vector3.one;
+                verts[index] = new Vector3(x/(xRes-1f), heightMap[x, y] - 0.25f, y/(yRes-1f)) - 0.5f*Vector3.one;
 
                 if (x == xRes-1 || y == yRes-1) continue;
 
@@ -146,16 +139,19 @@ public class PerlinFloor : MonoBehaviour
     }
 
     private void GenerateHeightMap() {
+        int originX = (int)(8092 * sysRand.NextDouble());
+        int originY = (int)(8092 * sysRand.NextDouble());
         heightMap = new float[xRes, yRes];
 
         for (int d=0; d<depth; d++) {
             for (int y=0; y<yRes; y++) {
                 for (int x=0; x<xRes; x++) {
+                    float octavePower = Mathf.Pow(octaveScaling, d);
 
                     heightMap[x,y] += Mathf.PerlinNoise(
-                        x/(xRes-1f) * transform.localScale.x*octavesPerUnit * d,
-                        y/(yRes-1f) * transform.localScale.z*octavesPerUnit * d) /
-                            Mathf.Pow(depthScaling, d);
+                        originX + x/(xRes-1f) / unitsPerOctave * octavePower,
+                        originY + y/(yRes-1f) / unitsPerOctave * octavePower
+                    ) / Mathf.Pow(depthScaling, d);
                 }
             }
         }

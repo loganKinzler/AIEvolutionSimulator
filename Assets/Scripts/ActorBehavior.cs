@@ -50,17 +50,26 @@ public class ActorBehavior : MonoBehaviour
     private delegate Quaternion GetRotationFromPlanePos(Vector2 planePos, Vector2 forwardVect);
     private GetRotationFromPlanePos GetTerrainRotation;
 
+    private delegate void PlaceInHashFolder(GameObject hashObject);
+    private PlaceInHashFolder HashObjectByPosition;
+
 
     void Start()
     {
+        
         PerlinFloor terrainScript = FindObjectOfType<PerlinFloor>();
+        SceneSpawner spawningScript = FindAnyObjectByType<SceneSpawner>();
         terrainObject = terrainScript.gameObject;
-        currentAction = DecideOnNewAction();
 
         // delegates
         GetTerrainHeight = new GetHeightFromPlanePos( terrainScript.GetHeightFromPlanePos );
         GetTerrainNormal = new GetNormalFromPlanePos( terrainScript.GetNormalAt );
-        GetTerrainRotation = new GetRotationFromPlanePos( terrainScript.GetRotationAt );
+        // GetTerrainRotation = new GetRotationFromPlanePos( terrainScript.GetRotationAt );
+        HashObjectByPosition = new PlaceInHashFolder( spawningScript.PlaceInHashFolder );
+
+
+        // action setup
+        currentAction = DecideOnNewAction();
 
         // wander setup
         currentPosition = GetCurrentPosition(); 
@@ -139,6 +148,7 @@ public class ActorBehavior : MonoBehaviour
         );
 
         Vector3 newPos = new Vector3( localPosition.x - 0.5f, GetTerrainHeight(localPosition), localPosition.y - 0.5f );
+        HashObjectByPosition(gameObject);
         transform.localPosition = newPos;
     }
 
