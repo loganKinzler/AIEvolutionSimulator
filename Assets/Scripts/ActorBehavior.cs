@@ -12,9 +12,9 @@ public class ActorBehavior : MonoBehaviour
     public Material deathMaterial;
 
 
-    private enum Action {Wander, Death, Forage}
+    private enum Action {Wander, Death, Forage, Eat}
     private Dictionary<Action, float> actionDelays = new Dictionary<Action, float>{
-        [Action.Wander] = 0.5f, [Action.Death] = 0f, [Action.Forage] = 1f};
+        [Action.Wander] = 0.5f, [Action.Death] = 0f, [Action.Forage] = 0f, [Action.Eat] = 1f};
     
 
     // ACTION VARS
@@ -23,6 +23,8 @@ public class ActorBehavior : MonoBehaviour
     private float finishedTime = 0f;
     private Action currentAction;
 
+    // FOOD VARS
+    private FoodBehavior currentFood;
 
     // ENERGY VARS
     private float maxEnergy;
@@ -35,7 +37,7 @@ public class ActorBehavior : MonoBehaviour
     private Vector2 currentPosition;
     
 
-    private float boundMargin = 0.0f;
+    private float boundMargin = 0.1f;
     private (float, float) wanderRadius = (1f,2f);
     private float moveSpeed = 0.8f;
 
@@ -53,6 +55,9 @@ public class ActorBehavior : MonoBehaviour
     private delegate void PlaceInHashFolder(GameObject hashObject);
     private PlaceInHashFolder HashObjectByPosition;
 
+    private delegate FoodBehavior GetClosestFood(ActorBehavior actor);
+    private GetClosestFood FindNearbyFood;
+
 
     void Start()
     {
@@ -65,7 +70,9 @@ public class ActorBehavior : MonoBehaviour
         GetTerrainHeight = new GetHeightFromPlanePos( terrainScript.GetHeightFromPlanePos );
         GetTerrainNormal = new GetNormalFromPlanePos( terrainScript.GetNormalAt );
         // GetTerrainRotation = new GetRotationFromPlanePos( terrainScript.GetRotationAt );
+
         HashObjectByPosition = new PlaceInHashFolder( spawningScript.PlaceInHashFolder );
+        FindNearbyFood = new GetClosestFood( spawningScript.GetClosestFood );
 
 
         // action setup
@@ -76,8 +83,8 @@ public class ActorBehavior : MonoBehaviour
         targetPosition = currentPosition + GetNewTargetPos();
     
         // energy setup
-        maxEnergy = Mathf.Lerp(12f, 15f, (float)sysRand.NextDouble());
-        energy = Mathf.Lerp(0.8f*maxEnergy, maxEnergy, (float)sysRand.NextDouble());
+        maxEnergy = Mathf.Lerp(22f, 30f, (float)sysRand.NextDouble());
+        energy = Mathf.Lerp(0.85f*maxEnergy, maxEnergy, (float)sysRand.NextDouble());
     }
 
     void Update()
@@ -88,6 +95,8 @@ public class ActorBehavior : MonoBehaviour
         finishedPerformingAction = PerformCurrentAction();
 
         if (finishedPerformingAction) {
+            StopCurrentAction();
+
             finishedTime = Time.time;
             canStartNewAction = true;
         }
@@ -96,7 +105,10 @@ public class ActorBehavior : MonoBehaviour
 
     // EVENUAL DELEGATES
     private Action DecideOnNewAction() {
+        if (currentAction == Action.Forage && currentFood != null) return Action.Eat;
+
         if (energy <= 0f) return Action.Death;
+        if (energy <= 7.5f) return Action.Forage;
         return Action.Wander;
     }
 
@@ -112,24 +124,63 @@ public class ActorBehavior : MonoBehaviour
             case Action.Death:
                 actorBody.GetComponent<MeshRenderer>().material = deathMaterial;
             break;
+
+            case Action.Forage:
+                currentFood = FindNearbyFood(this);
+                if (currentFood == null) {Debug.Log("Didn't find food"); return;}
+
+
+                targetPosition = new Vector2(
+                    terrainObject.transform.localScale.x * currentFood.gameObject.transform.localPosition.x,
+                    terrainObject.transform.localScale.z * currentFood.gameObject.transform.localPosition.z);
+            break;
+
+            case Action.Eat:
+                currentFood.StartEating();
+            break;
         }
     }
 
     private bool PerformCurrentAction() {
+        if (energy <= 0f) return true;
+
         switch (currentAction) {
             case Action.Wander:
                 Vector2 targetDelta = targetPosition - currentPosition;
 
-                if (targetDelta.magnitude < 0.01f || energy <= 0f) return true;
+                if (targetDelta.magnitude < 0.01f) return true;
                 TransformCurrentPosition(targetDelta.normalized * moveSpeed * Time.deltaTime);
             break;
 
             case Action.Death:
                 // do nothing during death
             break;
+
+            case Action.Forage:
+                if (currentFood == null) return true;// food wasn't found
+
+                targetDelta = currentFood.GetCurrentPosition() - currentPosition;
+
+                if (targetDelta.magnitude < 0.05) return true;// wait for actor to reach food
+                TransformCurrentPosition(targetDelta.normalized * moveSpeed * Time.deltaTime);
+            break;
+
+            case Action.Eat:
+                return currentFood.finishedEating;
         }
 
         return false;
+    }
+
+    private void StopCurrentAction() {
+        // for cleaning up non-isolated actions
+
+        switch (currentAction) {
+            case Action.Eat:
+                currentFood.FinishEating(this);
+                currentFood = null;
+            break;
+        }
     }
 
 

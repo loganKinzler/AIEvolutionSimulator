@@ -150,7 +150,7 @@ public class SceneSpawner : MonoBehaviour
         }
     }
 
-    public FoodBehavior FindFood(ActorBehavior actor) {
+    public FoodBehavior GetClosestFood(ActorBehavior actor) {
         GameObject actorObject = actor.gameObject;
         Vector2 actorLocalPos = 0.5f*Vector2.one + new Vector2(actorObject.transform.localPosition.x, actorObject.transform.localPosition.z);
         
@@ -158,6 +158,10 @@ public class SceneSpawner : MonoBehaviour
         GameObject actorFolder = hashFolders[actorHashPos.x, actorHashPos.y];
         FoodBehavior[] hashFolderFood = actorFolder.GetComponentsInChildren<FoodBehavior>();
 
+        if (hashFolderFood.Length == 0 || // no nearby food or only food nearby is being eaten
+            (hashFolderFood.Length == 1 && hashFolderFood[0].isBeingEaten)) return null;
+
+        if (hashFolderFood.Length == 1) return hashFolderFood[0];// only one nearby food
 
         Vector2 foodLocalPos =  0.5f*Vector2.one + new Vector2(
             hashFolderFood[0].transform.localPosition.x, hashFolderFood[0].transform.localPosition.z);
@@ -166,6 +170,8 @@ public class SceneSpawner : MonoBehaviour
         float closestDistance = (foodLocalPos - actorLocalPos).magnitude;
 
         for (int i=1; i<hashFolderFood.Length; i++) {
+            if (hashFolderFood[i].isBeingEaten) continue;
+            
             foodLocalPos =  0.5f*Vector2.one + new Vector2(
                 hashFolderFood[i].transform.localPosition.x, hashFolderFood[i].transform.localPosition.z);
             
