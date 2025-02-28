@@ -15,11 +15,16 @@ public class SceneSpawner : MonoBehaviour
 
     [Header("Actors")]
     [SerializeField] private int numActors;
-    [SerializeField] private GameObject actor;
+    [SerializeField] private GameObject actorPrefab;
     [SerializeField] private GameObject actorFolder;
 
     [Header("Food")]
-    [SerializeField] private GameObject foodObject;
+    [SerializeField] private float foodDelay = 2.5f;
+    [SerializeField] private int foodPerDelay = 5;
+    // [SerializeField] private int maxFood = 50;
+    // [SerializeField] private float maxDensity = 1f;
+    [SerializeField] private GameObject foodPrefab;
+    private GameObject[] foodObjects;
 
 
     // DELEGATES
@@ -53,8 +58,12 @@ public class SceneSpawner : MonoBehaviour
 
     IEnumerator WaitForTerrain() {
         yield return new WaitUntil(() => GetComponent<MeshCollider>().sharedMesh != null);
+        
         CreateHashFolders();
-        SpawnFood();
+
+        for (int i=0; i<50; i++) SpawnFood();
+        StartCoroutine(FoodRoutine());
+
         SpawnActors();
     }
 
@@ -82,13 +91,29 @@ public class SceneSpawner : MonoBehaviour
 
 
     // SPAWNING METHODS
-    void SpawnFood() {
+    private IEnumerator FoodRoutine() {
+        while (true) {
+            SpawnFood();
+            yield return new WaitForSeconds(foodDelay); 
+        }
+    }
 
+    private void SpawnFood() {
+        for (int f=0; f<foodPerDelay; f++) {
+            GameObject newFood = Instantiate<GameObject>(foodPrefab);
+            newFood.name = String.Format("Food_{0}", f);
+
+            Vector2 flatPos = RandomPos();
+            newFood.transform.parent = actorFolder.transform;// adjust to scaled transform before positioning
+            newFood.transform.localPosition = new Vector3(// set food local position
+                flatPos.x - 0.5f, GetTerrainHeight(flatPos), flatPos.y - 0.5f );
+            PlaceInHashFolder(newFood);// hash the position
+        }
     }
 
     void SpawnActors() {
         for (int a=0; a<numActors; a++) {
-            GameObject newActor = Instantiate<GameObject>(actor);
+            GameObject newActor = Instantiate<GameObject>(actorPrefab);
             newActor.name = String.Format("Actor_{0}", a);
 
             Vector2 flatPos = RandomPos();
@@ -125,4 +150,32 @@ public class SceneSpawner : MonoBehaviour
         }
     }
 
+    public FoodBehavior FindFood(ActorBehavior actor) {
+        GameObject actorObject = actor.gameObject;
+        Vector2 actorLocalPos = 0.5f*Vector2.one + new Vector2(actorObject.transform.localPosition.x, actorObject.transform.localPosition.z);
+        
+        Vector2Int actorHashPos = GetHashPosition(actorLocalPos);
+        GameObject actorFolder = hashFolders[actorHashPos.x, actorHashPos.y];
+        FoodBehavior[] hashFolderFood = actorFolder.GetComponentsInChildren<FoodBehavior>();
+
+
+        Vector2 foodLocalPos =  0.5f*Vector2.one + new Vector2(
+            hashFolderFood[0].transform.localPosition.x, hashFolderFood[0].transform.localPosition.z);
+
+        int closestIndex = 0;
+        float closestDistance = (foodLocalPos - actorLocalPos).magnitude;
+
+        for (int i=1; i<hashFolderFood.Length; i++) {
+            foodLocalPos =  0.5f*Vector2.one + new Vector2(
+                hashFolderFood[i].transform.localPosition.x, hashFolderFood[i].transform.localPosition.z);
+            
+            if ((foodLocalPos - actorLocalPos).magnitude < closestDistance) {
+                closestDistance = (foodLocalPos - actorLocalPos).magnitude;
+                closestIndex = i;
+            }
+        }
+
+        // currently the closest within the current hash region
+        return hashFolderFood[closestIndex];
+    }
 }

@@ -12,9 +12,9 @@ public class ActorBehavior : MonoBehaviour
     public Material deathMaterial;
 
 
-    private enum Action {Wander, Death}
+    private enum Action {Wander, Death, Forage}
     private Dictionary<Action, float> actionDelays = new Dictionary<Action, float>{
-        [Action.Wander] = 0.5f, [Action.Death] = 0f};
+        [Action.Wander] = 0.5f, [Action.Death] = 0f, [Action.Forage] = 1f};
     
 
     // ACTION VARS
@@ -27,7 +27,7 @@ public class ActorBehavior : MonoBehaviour
     // ENERGY VARS
     private float maxEnergy;
     private float energy;// the actor can move X units 
-    private float gravity = 10f;// the actor gets slowed by hills
+    // private float gravity = 10f;// the actor gets slowed by hills
 
 
     // WANDER VARS
@@ -93,6 +93,7 @@ public class ActorBehavior : MonoBehaviour
         }
     }
 
+
     // EVENUAL DELEGATES
     private Action DecideOnNewAction() {
         if (energy <= 0f) return Action.Death;
@@ -129,6 +130,12 @@ public class ActorBehavior : MonoBehaviour
         }
 
         return false;
+    }
+
+
+    // ENERGY METHODS
+    public void AddEnergy(float energyDelta) {
+        energy = Mathf.Max(maxEnergy, energy + energyDelta);
     }
 
 
