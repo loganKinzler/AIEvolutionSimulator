@@ -184,7 +184,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   actorBody: {fileID: 3040426769965162950}
+  idleMaterial: {fileID: 2100000, guid: 0b61aeb38c33e514792531742d5f2a4a, type: 2}
+  wanderMaterial: {fileID: 2100000, guid: 970b7393ff4a1f943bbabb175945e755, type: 2}
   deathMaterial: {fileID: 2100000, guid: b783990bd66e94b4fb11e679f1b52ada, type: 2}
+  forageMaterial: {fileID: 2100000, guid: 07b009b411960944c9575f69a1efa7e4, type: 2}
+  eatingMaterial: {fileID: 2100000, guid: dc0b8a7eca5abd343bb2518e6fc293a3, type: 2}
 --- !u!1001 &6866699555234259712
 PrefabInstance:
   m_ObjectHideFlags: 0

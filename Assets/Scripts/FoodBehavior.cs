@@ -1,29 +1,33 @@
 using System;//
+using Unity.VisualScripting;
 using UnityEngine;//
 
 public class FoodBehavior : MonoBehaviour
 {
     // EATING VARS
-    public float calories = 15f;
-
+    [Header("Food")]
+    [SerializeField] private float calories = 15f;
+    [SerializeField] private float eatingDelay = 3f;
     private float eatingStartTime = 0f;
-    public float eatingDelay = 3f;
 
-    public Boolean isBeingEaten = false;
-    public Boolean finishedEating = false;
+    private bool beingEaten = false;
+    private bool finishedEating = false;
 
 
     void Update()
     {
-        if (isBeingEaten && Time.time < eatingStartTime + eatingDelay)
-            finishedEating = true;
+        if (beingEaten && Time.time < eatingStartTime + eatingDelay) return;
+        if (beingEaten) finishedEating = true;
     }
 
 
     // EATING METHODS
+    public bool IsBeingEaten() {return beingEaten;}
+    public bool IsFinishedEating() {return finishedEating;}
+    
     public void StartEating() {
         eatingStartTime = Time.time;
-        isBeingEaten = true;
+        beingEaten = true;
     }
 
     public void FinishEating(ActorBehavior actor) {

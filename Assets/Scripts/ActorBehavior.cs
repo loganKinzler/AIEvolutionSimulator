@@ -9,7 +9,14 @@ public class ActorBehavior : MonoBehaviour
 
     private GameObject terrainObject;
     public GameObject actorBody;
-    public Material deathMaterial;
+
+
+    [Header("Materials")]
+    [SerializeField] private Material idleMaterial;
+    [SerializeField] private Material wanderMaterial;
+    [SerializeField] private Material deathMaterial;
+    [SerializeField] private Material forageMaterial;
+    [SerializeField] private Material eatingMaterial;
 
 
     private enum Action {Wander, Death, Forage, Eat}
@@ -18,17 +25,20 @@ public class ActorBehavior : MonoBehaviour
     
 
     // ACTION VARS
-    private bool canStartNewAction = true;
-    private bool finishedPerformingAction = false;
+    [Header("Action")]
+    [SerializeField] private bool canStartNewAction = true;
+    [SerializeField] private bool finishedPerformingAction = false;
+    [SerializeField] private Action currentAction;
     private float finishedTime = 0f;
-    private Action currentAction;
 
     // FOOD VARS
     private FoodBehavior currentFood;
 
     // ENERGY VARS
-    private float maxEnergy;
-    private float energy;// the actor can move X units 
+
+    [Header("Energy")]
+    [SerializeField] private float maxEnergy;
+    [SerializeField] private float energy;// the actor can move X units 
     // private float gravity = 10f;// the actor gets slowed by hills
 
 
@@ -83,8 +93,8 @@ public class ActorBehavior : MonoBehaviour
         targetPosition = currentPosition + GetNewTargetPos();
     
         // energy setup
-        maxEnergy = Mathf.Lerp(22f, 30f, (float)sysRand.NextDouble());
-        energy = Mathf.Lerp(0.85f*maxEnergy, maxEnergy, (float)sysRand.NextDouble());
+        maxEnergy = Mathf.Lerp(12f, 15f, (float)sysRand.NextDouble());
+        energy = Mathf.Lerp(0.9f*maxEnergy, maxEnergy, (float)sysRand.NextDouble());
     }
 
     void Update()
@@ -105,10 +115,12 @@ public class ActorBehavior : MonoBehaviour
 
     // EVENUAL DELEGATES
     private Action DecideOnNewAction() {
-        if (currentAction == Action.Forage && currentFood != null) return Action.Eat;
-
         if (energy <= 0f) return Action.Death;
+
+        if (currentAction == Action.Eat) return Action.Wander;
+        if (currentAction == Action.Forage) return Action.Eat;
         if (energy <= 7.5f) return Action.Forage;
+
         return Action.Wander;
     }
 
@@ -119,30 +131,35 @@ public class ActorBehavior : MonoBehaviour
         switch (currentAction) {
             case Action.Wander:
                 targetPosition = GetNewTargetPos();
+                actorBody.GetComponent<MeshRenderer>().material = wanderMaterial;
             break;
 
             case Action.Death:
+                print(String.Format("Oh no. {0} is dead.", gameObject.name));
                 actorBody.GetComponent<MeshRenderer>().material = deathMaterial;
             break;
 
             case Action.Forage:
                 currentFood = FindNearbyFood(this);
-                if (currentFood == null) {Debug.Log("Didn't find food"); return;}
-
+                if (currentFood == null) return;
 
                 targetPosition = new Vector2(
                     terrainObject.transform.localScale.x * currentFood.gameObject.transform.localPosition.x,
                     terrainObject.transform.localScale.z * currentFood.gameObject.transform.localPosition.z);
+                actorBody.GetComponent<MeshRenderer>().material = forageMaterial;
             break;
 
             case Action.Eat:
+                if (currentFood == null) return;// food wasn't found / already eaten / reached by other actor
+
                 currentFood.StartEating();
+                actorBody.GetComponent<MeshRenderer>().material = eatingMaterial;
             break;
         }
     }
 
     private bool PerformCurrentAction() {
-        if (energy <= 0f) return true;
+        if (energy <= 0f && currentAction != Action.Death) return true;
 
         switch (currentAction) {
             case Action.Wander:
@@ -153,11 +170,12 @@ public class ActorBehavior : MonoBehaviour
             break;
 
             case Action.Death:
-                // do nothing during death
+                // do nothing on death
             break;
 
             case Action.Forage:
                 if (currentFood == null) return true;// food wasn't found
+                if (currentFood.IsBeingEaten()) {currentFood = null; return true;}// food was reached by another actor
 
                 targetDelta = currentFood.GetCurrentPosition() - currentPosition;
 
@@ -166,7 +184,8 @@ public class ActorBehavior : MonoBehaviour
             break;
 
             case Action.Eat:
-                return currentFood.finishedEating;
+                if (currentFood == null) return true;// food wasn't reached first
+                return currentFood.IsFinishedEating();// food was reached first
         }
 
         return false;
@@ -177,16 +196,20 @@ public class ActorBehavior : MonoBehaviour
 
         switch (currentAction) {
             case Action.Eat:
+                if (currentFood == null) return;
+
                 currentFood.FinishEating(this);
                 currentFood = null;
             break;
         }
+
+        actorBody.GetComponent<MeshRenderer>().material = idleMaterial;
     }
 
 
     // ENERGY METHODS
     public void AddEnergy(float energyDelta) {
-        energy = Mathf.Max(maxEnergy, energy + energyDelta);
+        energy = Mathf.Min(maxEnergy, energy + energyDelta);
     }
 
 

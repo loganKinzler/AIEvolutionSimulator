@@ -45,7 +45,6 @@ public class PerlinFloor : MonoBehaviour
         mesh.RecalculateNormals();
 
         GetComponent<MeshFilter>().mesh = mesh;
-        GetComponent<MeshCollider>().sharedMesh = mesh;
         GetComponent<MeshRenderer>().material = mat;
     }
 

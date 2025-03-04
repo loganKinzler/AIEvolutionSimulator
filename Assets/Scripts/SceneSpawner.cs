@@ -57,7 +57,7 @@ public class SceneSpawner : MonoBehaviour
     }
 
     IEnumerator WaitForTerrain() {
-        yield return new WaitUntil(() => GetComponent<MeshCollider>().sharedMesh != null);
+        yield return new WaitUntil(() => GetComponent<MeshFilter>().mesh != null);
         
         CreateHashFolders();
 
@@ -155,11 +155,11 @@ public class SceneSpawner : MonoBehaviour
         Vector2 actorLocalPos = 0.5f*Vector2.one + new Vector2(actorObject.transform.localPosition.x, actorObject.transform.localPosition.z);
         
         Vector2Int actorHashPos = GetHashPosition(actorLocalPos);
-        GameObject actorFolder = hashFolders[actorHashPos.x, actorHashPos.y];
-        FoodBehavior[] hashFolderFood = actorFolder.GetComponentsInChildren<FoodBehavior>();
+        GameObject actorHashFolder = hashFolders[actorHashPos.x, actorHashPos.y];
+        FoodBehavior[] hashFolderFood = actorHashFolder.GetComponentsInChildren<FoodBehavior>();
 
         if (hashFolderFood.Length == 0 || // no nearby food or only food nearby is being eaten
-            (hashFolderFood.Length == 1 && hashFolderFood[0].isBeingEaten)) return null;
+            (hashFolderFood.Length == 1 && hashFolderFood[0].IsBeingEaten())) return null;
 
         if (hashFolderFood.Length == 1) return hashFolderFood[0];// only one nearby food
 
@@ -170,7 +170,7 @@ public class SceneSpawner : MonoBehaviour
         float closestDistance = (foodLocalPos - actorLocalPos).magnitude;
 
         for (int i=1; i<hashFolderFood.Length; i++) {
-            if (hashFolderFood[i].isBeingEaten) continue;
+            if (hashFolderFood[i].IsBeingEaten()) continue;
             
             foodLocalPos =  0.5f*Vector2.one + new Vector2(
                 hashFolderFood[i].transform.localPosition.x, hashFolderFood[i].transform.localPosition.z);
