@@ -1,8 +1,9 @@
 using System;//
 using System.Collections;//
 using UnityEngine;//
+using UnityEngine.Assertions.Must;//
 
-public class SceneSpawner : MonoBehaviour
+public class SceneManager : MonoBehaviour
 {
     private System.Random sysRand;
 
@@ -17,6 +18,8 @@ public class SceneSpawner : MonoBehaviour
     [SerializeField] private int numActors;
     [SerializeField] private GameObject actorPrefab;
     [SerializeField] private GameObject actorFolder;
+    private ActorBehavior[] actors;
+    
 
     [Header("Food")]
     [SerializeField] private float foodDelay = 2.5f;
@@ -24,8 +27,6 @@ public class SceneSpawner : MonoBehaviour
     // [SerializeField] private int maxFood = 50;
     // [SerializeField] private float maxDensity = 1f;
     [SerializeField] private GameObject foodPrefab;
-    private GameObject[] foodObjects;
-
 
     // DELEGATES
     private delegate float GetHeightFromPlanePos(Vector2 u);
@@ -42,10 +43,13 @@ public class SceneSpawner : MonoBehaviour
     {
         sysRand = new System.Random();
 
+        // position hashing
         hashX = (int) Math.Max(1, transform.localScale.x / hashResolution);
         hashY = (int) Math.Max(1, transform.localScale.z / hashResolution);
-        
         hashFolders = new GameObject[hashX,hashY];
+
+        // actors
+        actors = new ActorBehavior[numActors];
 
         // delegates
         GetTerrainHeight = new GetHeightFromPlanePos( GetComponent<PerlinFloor>().GetHeightFromPlanePos );
@@ -62,7 +66,7 @@ public class SceneSpawner : MonoBehaviour
         CreateHashFolders();
 
         for (int i=0; i<50; i++) SpawnFood();
-        StartCoroutine(FoodRoutine());
+        StartCoroutine( FoodRoutine() );
 
         SpawnActors();
     }
@@ -115,6 +119,7 @@ public class SceneSpawner : MonoBehaviour
         for (int a=0; a<numActors; a++) {
             GameObject newActor = Instantiate<GameObject>(actorPrefab);
             newActor.name = String.Format("Actor_{0}", a);
+            actors[a] = newActor.GetComponent<ActorBehavior>();
 
             Vector2 flatPos = RandomPos();
             newActor.transform.parent = actorFolder.transform;// adjust to scaled transform before positioning
@@ -150,6 +155,45 @@ public class SceneSpawner : MonoBehaviour
         }
     }
 
+
+    // SEARCH METHODS
+    public ActorBehavior GetClosestActor(ActorBehavior actor) {
+        GameObject actorObject = actor.gameObject;
+        Vector2 actorLocalPos = 0.5f*Vector2.one + new Vector2(actorObject.transform.localPosition.x, actorObject.transform.localPosition.z);
+        
+        Vector2Int actorHashPos = GetHashPosition(actorLocalPos);
+        GameObject actorHashFolder = hashFolders[actorHashPos.x, actorHashPos.y];
+        ActorBehavior[] hashFolderActors = actorHashFolder.GetComponentsInChildren<ActorBehavior>();
+
+        if (hashFolderActors.Length == 1) return null;// current actor is only one in hash folder
+
+        int firstActor = hashFolderActors[0].Equals(actor)? 1 : 0;
+        if (hashFolderActors.Length == 2) return hashFolderActors[ firstActor ];// 2 actors in hash folder, meaning only 1 to find
+
+        Vector2 searchLocalPos =  0.5f*Vector2.one + new Vector2(
+            hashFolderActors[ firstActor ].transform.localPosition.x,
+            hashFolderActors[ firstActor ].transform.localPosition.z);
+
+        int closestIndex = 0;
+        float closestDistance = (searchLocalPos - actorLocalPos).magnitude;
+
+        for (int i = 1-firstActor; i<hashFolderActors.Length; i++) {
+            if (hashFolderActors[i].Equals(actor) ||
+                !hashFolderActors[i].GetStatus().Equals(ActorBehavior.Status.Horny)) continue;
+            
+            searchLocalPos =  0.5f*Vector2.one + new Vector2(
+                hashFolderActors[i].transform.localPosition.x, hashFolderActors[i].transform.localPosition.z);
+            
+            if ((searchLocalPos - actorLocalPos).magnitude < closestDistance) {
+                closestDistance = (searchLocalPos - actorLocalPos).magnitude;
+                closestIndex = i;
+            }
+        }
+
+        // currently the closest within the current hash region
+        return hashFolderActors[ closestIndex ];
+    }
+
     public FoodBehavior GetClosestFood(ActorBehavior actor) {
         GameObject actorObject = actor.gameObject;
         Vector2 actorLocalPos = 0.5f*Vector2.one + new Vector2(actorObject.transform.localPosition.x, actorObject.transform.localPosition.z);
@@ -183,5 +227,15 @@ public class SceneSpawner : MonoBehaviour
 
         // currently the closest within the current hash region
         return hashFolderFood[closestIndex];
+    }
+
+    // Actor Events
+    public int GetNextIndex(int currentActor, bool cycleUpwards) {
+        int index = currentActor + (cycleUpwards? 1:-1);
+        return (index % numActors + numActors) % numActors;// proper modulus
+    }
+
+    public ActorBehavior GetActor(int currentActor) {
+        return actors[currentActor].GetComponent<ActorBehavior>();// proper modulus
     }
 }

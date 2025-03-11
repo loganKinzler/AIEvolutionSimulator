@@ -189,6 +189,15 @@ MonoBehaviour:
   deathMaterial: {fileID: 2100000, guid: b783990bd66e94b4fb11e679f1b52ada, type: 2}
   forageMaterial: {fileID: 2100000, guid: 07b009b411960944c9575f69a1efa7e4, type: 2}
   eatingMaterial: {fileID: 2100000, guid: dc0b8a7eca5abd343bb2518e6fc293a3, type: 2}
+  courtingMaterial: {fileID: 2100000, guid: 20e04c4aabcdfd24f9630fddc444aa69, type: 2}
+  meetingMaterial: {fileID: 2100000, guid: 6ef5c5787e9db464ab5882815e555ddd, type: 2}
+  fuckingMaterial: {fileID: 2100000, guid: 2f6e177530b58694cbc523a51b404f59, type: 2}
+  currentStatus: 0
+  canStartNewAction: 1
+  finishedPerformingAction: 0
+  currentAction: 0
+  maxEnergy: 0
+  energy: 0
 --- !u!1001 &6866699555234259712
 PrefabInstance:
   m_ObjectHideFlags: 0

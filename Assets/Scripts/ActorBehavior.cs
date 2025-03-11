@@ -1,6 +1,7 @@
 using System;//
 using System.Collections;//
 using System.Collections.Generic;//
+using Unity.VisualScripting;
 using UnityEngine;//
 
 public class ActorBehavior : MonoBehaviour
@@ -10,6 +11,8 @@ public class ActorBehavior : MonoBehaviour
     private GameObject terrainObject;
     public GameObject actorBody;
 
+    private SceneManager managerScript;
+
 
     [Header("Materials")]
     [SerializeField] private Material idleMaterial;
@@ -17,11 +20,22 @@ public class ActorBehavior : MonoBehaviour
     [SerializeField] private Material deathMaterial;
     [SerializeField] private Material forageMaterial;
     [SerializeField] private Material eatingMaterial;
+    [SerializeField] private Material courtingMaterial;
+    [SerializeField] private Material meetingMaterial;
+    [SerializeField] private Material fuckingMaterial;
 
 
-    private enum Action {Wander, Death, Forage, Eat}
+    public enum Status {Neutral, Dead, Hungry, Horny}// unused for now
+    public enum Action {Wander, Death, Forage, Eat, Court, Meet, Fuck}
     private Dictionary<Action, float> actionDelays = new Dictionary<Action, float>{
-        [Action.Wander] = 0.5f, [Action.Death] = 0f, [Action.Forage] = 0f, [Action.Eat] = 1f};
+        [Action.Wander] = 0.5f, [Action.Death] = 0f, [Action.Forage] = 0f,
+        [Action.Eat] = 1f, [Action.Court] = 0f, [Action.Meet] = 0f,
+        [Action.Fuck] = 2f};
+    
+
+    // STATUS VARS
+    [Header("Status")]
+    [SerializeField] private Status currentStatus;
     
 
     // ACTION VARS
@@ -31,16 +45,20 @@ public class ActorBehavior : MonoBehaviour
     [SerializeField] private Action currentAction;
     private float finishedTime = 0f;
 
+
     // FOOD VARS
     private FoodBehavior currentFood;
 
-    // ENERGY VARS
 
+    // ENERGY VARS
     [Header("Energy")]
     [SerializeField] private float maxEnergy;
-    [SerializeField] private float energy;// the actor can move X units 
+    [SerializeField] private float energy;// the actor can move 1 unit per energy
     // private float gravity = 10f;// the actor gets slowed by hills
 
+    // MATING VARS
+    private ActorBehavior currentPartner;
+    private bool isDesired = false;
 
     // WANDER VARS
     private Vector2 targetPosition;
@@ -68,12 +86,14 @@ public class ActorBehavior : MonoBehaviour
     private delegate FoodBehavior GetClosestFood(ActorBehavior actor);
     private GetClosestFood FindNearbyFood;
 
+    private delegate ActorBehavior GetClosestActor(ActorBehavior actor);
+    private GetClosestActor FindNearbyPartner;
+
 
     void Start()
     {
-        
         PerlinFloor terrainScript = FindObjectOfType<PerlinFloor>();
-        SceneSpawner spawningScript = FindAnyObjectByType<SceneSpawner>();
+        managerScript = FindAnyObjectByType<SceneManager>();
         terrainObject = terrainScript.gameObject;
 
         // delegates
@@ -81,9 +101,9 @@ public class ActorBehavior : MonoBehaviour
         GetTerrainNormal = new GetNormalFromPlanePos( terrainScript.GetNormalAt );
         // GetTerrainRotation = new GetRotationFromPlanePos( terrainScript.GetRotationAt );
 
-        HashObjectByPosition = new PlaceInHashFolder( spawningScript.PlaceInHashFolder );
-        FindNearbyFood = new GetClosestFood( spawningScript.GetClosestFood );
-
+        HashObjectByPosition = new PlaceInHashFolder( managerScript.PlaceInHashFolder );
+        FindNearbyFood = new GetClosestFood( managerScript.GetClosestFood );
+        FindNearbyPartner = new GetClosestActor( managerScript.GetClosestActor );
 
         // action setup
         currentAction = DecideOnNewAction();
@@ -114,18 +134,40 @@ public class ActorBehavior : MonoBehaviour
 
 
     // EVENUAL DELEGATES
-    private Action DecideOnNewAction() {
-        if (energy <= 0f) return Action.Death;
+    private Status GetNewStatus() {
+        if (energy <= 0f) return Status.Dead;
+        if (energy <= 7.5f) return Status.Hungry;
+        if (energy >= 12f) return Status.Horny;
+        return Status.Neutral;
+    }
 
-        if (currentAction == Action.Eat) return Action.Wander;
-        if (currentAction == Action.Forage) return Action.Eat;
-        if (energy <= 7.5f) return Action.Forage;
+    private Action DecideOnNewAction() {
+        switch (currentStatus) {
+            case Status.Neutral:
+                return Action.Wander;
+
+            case Status.Dead:
+                return Action.Death;
+
+            case Status.Hungry:
+                if (currentAction == Action.Eat) return Action.Wander;
+                if (currentAction == Action.Forage) return Action.Eat;
+                return Action.Forage;
+
+            case Status.Horny:
+                if (currentAction == Action.Fuck) return Action.Wander;
+                if (currentAction == Action.Meet) return Action.Fuck;
+                if (currentAction == Action.Court) return Action.Meet;
+                if (isDesired && currentPartner != null) return Action.Meet;
+                return Action.Court;
+        }
 
         return Action.Wander;
     }
 
     private void StartNewAction() {
         canStartNewAction = false;
+        currentStatus = GetNewStatus();
         currentAction = DecideOnNewAction();
 
         switch (currentAction) {
@@ -135,7 +177,6 @@ public class ActorBehavior : MonoBehaviour
             break;
 
             case Action.Death:
-                print(String.Format("Oh no. {0} is dead.", gameObject.name));
                 actorBody.GetComponent<MeshRenderer>().material = deathMaterial;
             break;
 
@@ -154,6 +195,33 @@ public class ActorBehavior : MonoBehaviour
 
                 currentFood.StartEating();
                 actorBody.GetComponent<MeshRenderer>().material = eatingMaterial;
+            break;
+
+            case Action.Court:
+                currentPartner = FindNearbyPartner(this);
+                if (currentPartner == null) return;// no mates found
+                currentPartner.SetPartner(this);// create comms
+
+                SetDesired(true);// adjust currect actor
+                currentPartner.SetDesired(true);// skip parter's search
+                actorBody.GetComponent<MeshRenderer>().material = courtingMaterial;
+            break;
+
+            case Action.Meet:
+                if (currentPartner == null) return;// no mates found
+
+                targetPosition = 0.5f*(currentPosition + currentPartner.GetCurrentPosition());// meet halfway
+                actorBody.GetComponent<MeshRenderer>().material = meetingMaterial;
+            break;
+
+            case Action.Fuck:
+                if (currentPartner == null) return;// no mates found
+                if (currentPartner.GetAction() == Action.Fuck) return;// wait for other to reach
+                
+                // the last one to get into position will perform action
+                // shit balls to spawn a child
+
+                actorBody.GetComponent<MeshRenderer>().material = fuckingMaterial;
             break;
         }
     }
@@ -186,6 +254,22 @@ public class ActorBehavior : MonoBehaviour
             case Action.Eat:
                 if (currentFood == null) return true;// food wasn't reached first
                 return currentFood.IsFinishedEating();// food was reached first
+
+            case Action.Court:
+                if (currentPartner == null) return true;// mate wasn't found
+                return currentPartner.finishedPerformingAction;
+
+            case Action.Meet:
+                if (currentPartner == null) return true;// partner may have died
+
+                targetDelta = currentPartner.GetCurrentPosition() - currentPosition;
+                if (targetDelta.magnitude < 0.05) return true;// wait for actor to reach mate
+                TransformCurrentPosition(targetDelta.normalized * moveSpeed * Time.deltaTime);
+            break;
+
+            case Action.Fuck:
+                if (currentPartner == null) return true;// other partner fucked current actor
+                return currentPartner.GetAction() == Action.Fuck;// wait for both to each eachother
         }
 
         return false;
@@ -205,6 +289,13 @@ public class ActorBehavior : MonoBehaviour
 
         actorBody.GetComponent<MeshRenderer>().material = idleMaterial;
     }
+
+    // GETTERS / SETTERS
+    public void SetPartner(ActorBehavior partner) {this.currentPartner = partner;}
+    public void SetDesired(bool desired) {this.isDesired = desired;}
+    public GameObject GetBody() {return actorBody;}
+    public Status GetStatus() {return currentStatus;}
+    public Action GetAction() {return currentAction;}
 
 
     // ENERGY METHODS
