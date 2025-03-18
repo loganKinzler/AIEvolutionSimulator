@@ -137,7 +137,7 @@ public class ActorBehavior : MonoBehaviour
     private Status GetNewStatus() {
         if (energy <= 0f) return Status.Dead;
         if (energy <= 7.5f) return Status.Hungry;
-        if (energy >= 12f) return Status.Horny;
+        if (energy >= 8f) return Status.Horny;
         return Status.Neutral;
     }
 
@@ -150,7 +150,7 @@ public class ActorBehavior : MonoBehaviour
                 return Action.Death;
 
             case Status.Hungry:
-                if (currentAction == Action.Eat) return Action.Wander;
+                if (currentAction == Action.Eat) return Action.Forage;
                 if (currentAction == Action.Forage) return Action.Eat;
                 return Action.Forage;
 
@@ -256,11 +256,27 @@ public class ActorBehavior : MonoBehaviour
                 return currentFood.IsFinishedEating();// food was reached first
 
             case Action.Court:
-                if (currentPartner == null) return true;// mate wasn't found
-                return currentPartner.finishedPerformingAction;
+                if (currentPartner == null) return true;// mate wasn't found or died
+
+                // if the other partner is no longer horny
+                if (currentPartner.GetStatus() != Status.Horny) {
+                    currentPartner.SetDesired(false);
+                    currentPartner.SetPartner(null);
+                    currentPartner = null;
+                    return true;
+                }
+
+                return currentPartner.finishedPerformingAction || currentPartner.GetAction() == Action.Court;
 
             case Action.Meet:
                 if (currentPartner == null) return true;// partner may have died
+
+                if (currentPartner.GetStatus() != Status.Horny) {
+                    currentPartner.SetDesired(false);
+                    currentPartner.SetPartner(null);
+                    currentPartner = null;
+                    return true;
+                }
 
                 targetDelta = currentPartner.GetCurrentPosition() - currentPosition;
                 if (targetDelta.magnitude < 0.05) return true;// wait for actor to reach mate
@@ -293,6 +309,7 @@ public class ActorBehavior : MonoBehaviour
     // GETTERS / SETTERS
     public void SetPartner(ActorBehavior partner) {this.currentPartner = partner;}
     public void SetDesired(bool desired) {this.isDesired = desired;}
+    public bool IsDesired() {return isDesired;}
     public GameObject GetBody() {return actorBody;}
     public Status GetStatus() {return currentStatus;}
     public Action GetAction() {return currentAction;}

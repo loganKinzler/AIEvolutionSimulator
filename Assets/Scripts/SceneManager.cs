@@ -178,7 +178,7 @@ public class SceneManager : MonoBehaviour
         float closestDistance = (searchLocalPos - actorLocalPos).magnitude;
 
         for (int i = 1-firstActor; i<hashFolderActors.Length; i++) {
-            if (hashFolderActors[i].Equals(actor) ||
+            if (hashFolderActors[i].Equals(actor) || hashFolderActors[i].IsDesired() ||
                 !hashFolderActors[i].GetStatus().Equals(ActorBehavior.Status.Horny)) continue;
             
             searchLocalPos =  0.5f*Vector2.one + new Vector2(

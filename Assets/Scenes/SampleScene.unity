@@ -272,7 +272,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 212732670}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a0f2ba472808761419e9e438059a574c, type: 3}
   m_Name: 
@@ -280,8 +280,8 @@ MonoBehaviour:
   managerObject: {fileID: 1456496746}
   cameraHolder: {fileID: 2036203983}
   cameraDistance: 5
-  cameraScrollDelta: 0.5
-  cameraDragSpeed: 0.25
+  cameraScrollSpeed: 0.175
+  cameraDragSpeed: 10
 --- !u!114 &212732672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,7 +289,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 212732670}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
@@ -423,7 +423,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 212732671}
         m_TargetAssemblyTypeName: CameraController, Assembly-CSharp
-        m_MethodName: Scroll
+        m_MethodName: Zoom
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -588,38 +588,7 @@ Transform:
   m_GameObject: {fileID: 475722729}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 2.77}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2036203984}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &518772441
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 518772442}
-  m_Layer: 0
-  m_Name: Center
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &518772442
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 518772441}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -2.55}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -744,7 +713,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hashResolution: 6
   emptyFolder: {fileID: 385844974}
-  numActors: 250
+  numActors: 4
   actorPrefab: {fileID: 4552291594604520790, guid: 3aa96950f7bd9e844942f69dda05988e, type: 3}
   actorFolder: {fileID: 87425669}
   foodDelay: 2.5
@@ -774,15 +743,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2036203983}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.17880219, y: 0, z: 0, w: 0.9838851}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 518772442}
   - {fileID: 475722732}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 20.6, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2129717926
 GameObject:
   m_ObjectHideFlags: 0

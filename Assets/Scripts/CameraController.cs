@@ -1,8 +1,5 @@
-using System;
-using Unity.VisualScripting;
 using UnityEngine;//
 using UnityEngine.InputSystem;//
-using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.Interactions;//
 
 public class CameraController : MonoBehaviour
@@ -19,12 +16,12 @@ public class CameraController : MonoBehaviour
     // camera
     [Header("Camera")]
     [SerializeField] private float cameraDistance = 3f;
-    [SerializeField] private float cameraScrollDelta = 1f;
+    [SerializeField] private float cameraScrollSpeed = 1f;
     [SerializeField] private float cameraDragSpeed = 2f;
     private GameObject playerCamera;
     
     // limits
-    private (float, float) camDistLimits = (4f, 8f);
+    private (float, float) camDistLimits = (1f, 4f);
     private (float, float) camPhiLimits = (10f, 80f);
 
     // data
@@ -34,7 +31,7 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         managerScript = managerObject.GetComponent<SceneManager>();
-        playerCamera = cameraHolder.GetComponentsInChildren<Transform>()[0].gameObject;
+        playerCamera = cameraHolder.transform.GetChild(0).gameObject;
 
         SetupCamera();
     }
@@ -42,7 +39,8 @@ public class CameraController : MonoBehaviour
 
     // CAMERA MOVEMENT
     private void SetupCamera() {
-        playerCamera.transform.localPosition = cameraDistance*Vector3.forward;
+        managerScript.transform.localPosition = Vector3.zero;
+        playerCamera.transform.localPosition = cameraDistance*Vector3.back;
 
         playerCamera.transform.localPosition = Mathf.Clamp(
             cameraDistance, camDistLimits.Item1,camDistLimits.Item2)*Vector3.back;
@@ -50,6 +48,8 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera() {
         cameraHolder.transform.parent = managerScript.GetActor(actorIndex).GetBody().transform;
+        cameraHolder.transform.localPosition = Vector3.zero;
+        playerCamera.transform.localPosition = cameraDistance*Vector3.back;
     }
 
 
@@ -69,7 +69,7 @@ public class CameraController : MonoBehaviour
     public void Zoom(InputAction.CallbackContext context) {
         if (!context.started) return;
 
-        cameraDistance = Mathf.Clamp(cameraDistance - context.ReadValue<Vector2>().y*cameraScrollDelta,
+        cameraDistance = Mathf.Clamp(cameraDistance - context.ReadValue<Vector2>().y * cameraScrollSpeed * Time.deltaTime,
             camDistLimits.Item1, camDistLimits.Item2);
 
         playerCamera.transform.localPosition = cameraDistance*Vector3.back;
@@ -78,15 +78,13 @@ public class CameraController : MonoBehaviour
     public void Look(InputAction.CallbackContext context) {
         if (!rightButtonIsDown) return;
 
-        Vector2 dragDelta = context.ReadValue<Vector2>() * cameraDragSpeed;
+        Vector2 dragDelta = context.ReadValue<Vector2>() * cameraDragSpeed * Time.deltaTime;
         Vector3 currentRotation = cameraHolder.transform.rotation.eulerAngles;
 
-        playerCamera.transform.localPosition = Vector3.zero;
-
         cameraHolder.transform.rotation = Quaternion.Euler(
-            Mathf.Clamp(currentRotation.x + dragDelta.y,
+            Mathf.Clamp(currentRotation.x - dragDelta.y,
                 camPhiLimits.Item1, camPhiLimits.Item2),
-            currentRotation.y - dragDelta.x,
+            currentRotation.y + dragDelta.x,
             0
         );
 
