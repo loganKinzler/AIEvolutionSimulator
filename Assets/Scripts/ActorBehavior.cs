@@ -36,7 +36,6 @@ public class ActorBehavior : MonoBehaviour
     // STATUS VARS
     [Header("Status")]
     [SerializeField] private Status currentStatus;
-    
 
     // ACTION VARS
     [Header("Action")]
@@ -103,7 +102,7 @@ public class ActorBehavior : MonoBehaviour
 
         HashObjectByPosition = new PlaceInHashFolder( managerScript.PlaceInHashFolder );
         FindNearbyFood = new GetClosestFood( managerScript.GetClosestFood );
-        FindNearbyPartner = new GetClosestActor( managerScript.GetClosestActor );
+        FindNearbyPartner = new GetClosestActor( managerScript.GetClosestMate );
 
         // action setup
         currentAction = DecideOnNewAction();
@@ -208,14 +207,21 @@ public class ActorBehavior : MonoBehaviour
             break;
 
             case Action.Meet:
-                if (currentPartner == null) return;// no mates found
+                if (currentPartner == null) {// no mates found
+                    SetDesired(false);
+                    return;
+                }
 
                 targetPosition = 0.5f*(currentPosition + currentPartner.GetCurrentPosition());// meet halfway
                 actorBody.GetComponent<MeshRenderer>().material = meetingMaterial;
             break;
 
             case Action.Fuck:
-                if (currentPartner == null) return;// no mates found
+                if (currentPartner == null) {// no mates found
+                    SetDesired(false);
+                    return;
+                }
+
                 if (currentPartner.GetAction() == Action.Fuck) return;// wait for other to reach
                 
                 // the last one to get into position will perform action
@@ -256,20 +262,30 @@ public class ActorBehavior : MonoBehaviour
                 return currentFood.IsFinishedEating();// food was reached first
 
             case Action.Court:
-                if (currentPartner == null) return true;// mate wasn't found or died
+                if (currentPartner == null) {// mate wasn't found or died
+                    currentPartner = null;
+                    SetDesired(false);
+
+                    return true;
+                }
 
                 // if the other partner is no longer horny
                 if (currentPartner.GetStatus() != Status.Horny) {
                     currentPartner.SetDesired(false);
                     currentPartner.SetPartner(null);
+                    
                     currentPartner = null;
+                    SetDesired(false);
                     return true;
                 }
 
                 return currentPartner.finishedPerformingAction || currentPartner.GetAction() == Action.Court;
 
             case Action.Meet:
-                if (currentPartner == null) return true;// partner may have died
+                if (currentPartner == null) {// partner may have died
+                    SetDesired(false);
+                    return true;
+                }
 
                 if (currentPartner.GetStatus() != Status.Horny) {
                     currentPartner.SetDesired(false);
@@ -301,6 +317,15 @@ public class ActorBehavior : MonoBehaviour
                 currentFood.FinishEating(this);
                 currentFood = null;
             break;
+
+            case Action.Fuck:
+                if (currentPartner == null) return;
+                currentPartner.SetDesired(false);
+                currentPartner.SetPartner(null);
+
+                SetDesired(false);
+                currentPartner = null;
+            break;
         }
 
         actorBody.GetComponent<MeshRenderer>().material = idleMaterial;
@@ -310,7 +335,9 @@ public class ActorBehavior : MonoBehaviour
     public void SetPartner(ActorBehavior partner) {this.currentPartner = partner;}
     public void SetDesired(bool desired) {this.isDesired = desired;}
     public bool IsDesired() {return isDesired;}
+
     public GameObject GetBody() {return actorBody;}
+
     public Status GetStatus() {return currentStatus;}
     public Action GetAction() {return currentAction;}
 

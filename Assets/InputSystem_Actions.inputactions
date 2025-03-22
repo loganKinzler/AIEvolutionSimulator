@@ -98,7 +98,7 @@
                 {
                     "name": "RightClick",
                     "type": "Button",
-                    "id": "03432d1f-aba0-4e8a-a404-673c2bebb408",
+                    "id": "f50ca1ce-7833-47cf-9ba8-809cd3ad9579",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -504,7 +504,7 @@
                 },
                 {
                     "name": "",
-                    "id": "210fc384-42a4-447b-b373-3650bcc20f57",
+                    "id": "4532fab9-de82-4cd2-a69f-c8a3adb5532f",
                     "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
@@ -605,6 +605,24 @@
                     "type": "PassThrough",
                     "id": "9caa3d8a-6b2f-4e8e-8bad-6ede561bd9be",
                     "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "NextButton",
+                    "type": "Button",
+                    "id": "12caf672-ca7d-44fc-b83f-ebd7b1e87adb",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PreviousButton",
+                    "type": "Button",
+                    "id": "9bb8bd85-d903-4fb0-9790-08e4fa6ee136",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -1026,6 +1044,28 @@
                     "processors": "",
                     "groups": "XR",
                     "action": "TrackedDeviceOrientation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3b9c0bc5-f419-43c8-8fa0-aee21ccb526f",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "NextButton",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "953ec575-d148-4cde-9cd4-b123a21fd109",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "PreviousButton",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

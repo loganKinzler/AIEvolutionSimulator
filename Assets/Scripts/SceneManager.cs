@@ -3,6 +3,22 @@ using System.Collections;//
 using UnityEngine;//
 using UnityEngine.Assertions.Must;//
 
+
+[System.Serializable]
+public class Name {
+    public string nameString;
+
+    public string GetNameString() {return this.nameString;}
+}
+
+[System.Serializable]
+public class NameList {
+    public Name[] names;
+
+    public int GetNameLength() {return names.Length;}
+    public string GetNameString(int index) {return names[index].GetNameString();}
+}
+
 public class SceneManager : MonoBehaviour
 {
     private System.Random sysRand;
@@ -38,10 +54,18 @@ public class SceneManager : MonoBehaviour
     private delegate Vector3 GetOrthographicPlane(Vector3 staticVect, Vector3 orthoVect);
     private GetOrthographicPlane GetTerrainForward;
 
+    // JSON data
+    public TextAsset namesJson;
+    private NameList nameList = new NameList();
+    private int namesLength;
 
     void Start()
     {
         sysRand = new System.Random();
+        
+        // import names
+        nameList = JsonUtility.FromJson<NameList>(namesJson.text);
+        namesLength = nameList.GetNameLength();
 
         // position hashing
         hashX = (int) Math.Max(1, transform.localScale.x / hashResolution);
@@ -118,7 +142,9 @@ public class SceneManager : MonoBehaviour
     void SpawnActors() {
         for (int a=0; a<numActors; a++) {
             GameObject newActor = Instantiate<GameObject>(actorPrefab);
-            newActor.name = String.Format("Actor_{0}", a);
+
+            int actorNameIndex = (int) (namesLength * sysRand.NextDouble());
+            newActor.name = nameList.GetNameString( actorNameIndex );
             actors[a] = newActor.GetComponent<ActorBehavior>();
 
             Vector2 flatPos = RandomPos();
@@ -157,7 +183,7 @@ public class SceneManager : MonoBehaviour
 
 
     // SEARCH METHODS
-    public ActorBehavior GetClosestActor(ActorBehavior actor) {
+    public ActorBehavior GetClosestMate(ActorBehavior actor) {
         GameObject actorObject = actor.gameObject;
         Vector2 actorLocalPos = 0.5f*Vector2.one + new Vector2(actorObject.transform.localPosition.x, actorObject.transform.localPosition.z);
         
@@ -236,6 +262,6 @@ public class SceneManager : MonoBehaviour
     }
 
     public ActorBehavior GetActor(int currentActor) {
-        return actors[currentActor].GetComponent<ActorBehavior>();// proper modulus
+        return actors[currentActor];
     }
 }

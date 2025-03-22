@@ -1,6 +1,8 @@
+using TMPro;
 using UnityEngine;//
 using UnityEngine.InputSystem;//
-using UnityEngine.InputSystem.Interactions;//
+using UnityEngine.InputSystem.Interactions;
+using UnityEngine.UI;//
 
 public class CameraController : MonoBehaviour
 {   
@@ -8,6 +10,7 @@ public class CameraController : MonoBehaviour
     public GameObject managerObject;
     private SceneManager managerScript;
     public GameObject cameraHolder;
+    public GameObject nameLabel;
 
     // inputs
     private bool rightButtonIsDown = false;
@@ -47,8 +50,10 @@ public class CameraController : MonoBehaviour
     }
 
     public void MoveCamera() {
+        nameLabel.GetComponent<TextMeshProUGUI>().text = managerScript.GetActor(actorIndex).gameObject.name;
         cameraHolder.transform.parent = managerScript.GetActor(actorIndex).GetBody().transform;
         cameraHolder.transform.localPosition = Vector3.zero;
+        
         playerCamera.transform.localPosition = cameraDistance*Vector3.back;
     }
 
