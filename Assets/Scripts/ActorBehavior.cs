@@ -226,6 +226,8 @@ public class ActorBehavior : MonoBehaviour
                 
                 // the last one to get into position will perform action
                 // shit balls to spawn a child
+                energy -= 5f;
+                currentPartner.AddEnergy(-5);
 
                 actorBody.GetComponent<MeshRenderer>().material = fuckingMaterial;
             break;
